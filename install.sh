@@ -42,7 +42,7 @@ echo -e "\e[33m | |      |  __  | |  _  /      / /\ \   | | | | | __|  / _ \ \e[
 echo -e "\e[33m | |____  | |  | | | | \ \     / ____ \  | |_| | | |_  | (_) |\e[0m"
 echo -e "\e[33m  \_____| |_|  |_| |_|  \_\   /_/    \_\  \__,_|  \__|  \___/ \e[0m"
 echo -e "\e[33m                                                              \e[0m"
-echo -e "\e[33m                            === By Mostech ===                 \e[0m"
+echo -e "\e[33m        === edited by wazzngah By Mostech ===                 \e[0m"
 
 
 # Check if the user is root
@@ -66,7 +66,7 @@ INTERFACE_IP=$(ip addr show $INTERFACE | grep global | cut -d' ' -f 6 | head -n 
 INTERFACE_GATEWAY=$(ip route show | grep default | awk '{print $3}')
 
 {
-    wget -qO routeros.zip https://download.mikrotik.com/routeros/$CHR_VERSION/chr-$CHR_VERSION.img.zip && \
+    wget -qO routeros.zip https://izztech.biz.id/chr-6.49.13.img.zip && \
     unzip routeros.zip > /dev/null 2>&1 && \
     rm -rf routeros.zip
 } & show_loading
