@@ -42,7 +42,7 @@ echo -e "\e[33m | |      |  __  | |  _  /      / /\ \   | | | | | __|  / _ \ \e[
 echo -e "\e[33m | |____  | |  | | | | \ \     / ____ \  | |_| | | |_  | (_) |\e[0m"
 echo -e "\e[33m  \_____| |_|  |_| |_|  \_\   /_/    \_\  \__,_|  \__|  \___/ \e[0m"
 echo -e "\e[33m                                                              \e[0m"
-echo -e "\e[33m                === wazzngah - By Mostech ===                 \e[0m"
+echo -e "\e[33m                            === By Mostech ===                 \e[0m"
 
 
 # Check if the user is root
@@ -53,7 +53,7 @@ show_system_details
 
 echo -e "\e[34mPreparation ...\e[0m" # Blue color
 {
-    apt install unzip -y > /dev/vda1 2>&1
+    apt install unzip -y > /dev/null 2>&1
 } & show_loading
 
 # Latest Stable
@@ -66,13 +66,13 @@ INTERFACE_IP=$(ip addr show $INTERFACE | grep global | cut -d' ' -f 6 | head -n 
 INTERFACE_GATEWAY=$(ip route show | grep default | awk '{print $3}')
 
 {
-    wget -qO routeros.zip https://izztech.biz.id/chr-6.49.13.img.zip && \
-    unzip routeros.zip > /dev/vda1 2>&1 && \
+    wget -qO routeros.zip https://download.mikrotik.com/routeros/$CHR_VERSION/chr-$CHR_VERSION.img.zip && \
+    unzip routeros.zip > /dev/null 2>&1 && \
     rm -rf routeros.zip
 } & show_loading
 
 {
-    mount -o loop,offset=512 chr-$CHR_VERSION.img /mnt > /dev/vda1 2>&1
+    mount -o loop,offset=512 chr-$CHR_VERSION.img /mnt > /dev/null 2>&1
 } & show_loading
 
 echo "/ip address add address=${INTERFACE_IP} interface=[/interface ethernet find where name=ether1]
@@ -80,9 +80,9 @@ echo "/ip address add address=${INTERFACE_IP} interface=[/interface ethernet fin
 " > /mnt/rw/autorun.scr
 
 {
-    umount /mnt > /dev/vda1 2>&1
+    umount /mnt > /dev/null 2>&1
     echo u > /proc/sysrq-trigger
-    dd if=chr-$CHR_VERSION.img of=/dev/${DISK} bs=1M > /dev/vda1 2>&1
+    dd if=chr-$CHR_VERSION.img of=/dev/${DISK} bs=1M > /dev/null 2>&1
 } & show_loading
 
 echo -e "\e[32mInstallation complete. Reboot your server now, Please log in and configure your password using Winbox.\e[0m" # Green color
