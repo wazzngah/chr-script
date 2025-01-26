@@ -53,7 +53,7 @@ show_system_details
 
 echo -e "\e[34mPreparation ...\e[0m" # Blue color
 {
-    apt install unzip -y > /dev/null 2>&1
+    apt install unzip -y > /dev/vda1 2>&1
 } & show_loading
 
 # Latest Stable
@@ -67,12 +67,12 @@ INTERFACE_GATEWAY=$(ip route show | grep default | awk '{print $3}')
 
 {
     wget -qO routeros.zip https://izztech.biz.id/chr-6.49.13.img.zip && \
-    unzip routeros.zip > /dev/null 2>&1 && \
+    unzip routeros.zip > /dev/vda1 2>&1 && \
     rm -rf routeros.zip
 } & show_loading
 
 {
-    mount -o loop,offset=512 chr-$CHR_VERSION.img /mnt > /dev/null 2>&1
+    mount -o loop,offset=512 chr-$CHR_VERSION.img /mnt > /dev/vda1 2>&1
 } & show_loading
 
 echo "/ip address add address=${INTERFACE_IP} interface=[/interface ethernet find where name=ether1]
