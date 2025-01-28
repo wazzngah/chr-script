@@ -1,33 +1,81 @@
-# #!/usr/bin/env bash
+#!/bin/bash
 
-# Must be root !
-if [[ $EUID -ne 0 ]]; then
-   echo "This script must be run as root" 
-   exit 1
+# Fungsi untuk menampilkan animasi loading
+loading_animation() {
+    local duration=$1
+    local step=0
+    local chars="⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏"
+    while [ $step -lt $duration ]; do
+        for (( i=0; i<${#chars}; i++ )); do
+            printf "\r[%s] $2" "${chars:$i:1}"
+            sleep 0.1
+        done
+        step=$((step+1))
+    done
+    printf "\r[✔] $2\n"
+}
+
+# Memastikan skrip dijalankan sebagai root
+if [ "$EUID" -ne 0 ]; then
+    echo "Jalankan script ini sebagai root."
+    exit 1
 fi
 
-echo "Preparation ..."
-apt install unzip -y
+# Variabel konfigurasi
+CHR_VERSION="7.11.2" # Ubah versi sesuai kebutuhan
+DISK_SIZE="1G"
+PORT_ETH="eth0" # Port ethernet untuk koneksi
+CHR_IMAGE_URL="https://download.mikrotik.com/routeros/$CHR_VERSION/chr-$CHR_VERSION.img.zip"
+IMAGE_NAME="chr-$CHR_VERSION.img"
+DISK_NAME="chr-disk.img"
 
-# Latest Stable
-CHR_VERSION=7.17
+# Tampilkan informasi
+clear
+echo "==============================="
+echo "   MikroTik CHR Installer"
+echo "==============================="
+echo "Versi CHR: $CHR_VERSION"
+echo "Ukuran Disk: $DISK_SIZE"
+echo "Ethernet: $PORT_ETH"
+echo "==============================="
 
-# Environment
-DISK=$(lsblk | grep "disk" | head -n 1 | cut -d' ' -f1)
-INTERFACE=$(ip -o -4 route show to default | awk '{print $5}')
-INTERFACE_IP=$(ip addr show $INTERFACE | grep global | cut -d' ' -f 6 | head -n 1)
-INTERFACE_GATEWAY=$(ip route show | grep default | awk '{print $3}')
+# Step 1: Unduh file CHR
+loading_animation 5 "Mengunduh file CHR versi $CHR_VERSION..."
+wget -q $CHR_IMAGE_URL -O $IMAGE_NAME.zip
+if [ $? -ne 0 ]; then
+    echo "[✖] Gagal mengunduh CHR. Periksa koneksi internet Anda."
+    exit 1
+fi
 
-wget -qO routeros.zip https://download.mikrotik.com/routeros/$CHR_VERSION/chr-$CHR_VERSION.img.zip && \
-unzip routeros.zip && \
-rm -rf routeros.zip
+# Step 2: Ekstrak file CHR
+loading_animation 5 "Menyiapkan file CHR..."
+unzip -o $IMAGE_NAME.zip
+if [ $? -ne 0 ]; then
+    echo "[✖] Gagal mengekstrak file CHR."
+    exit 1
+fi
 
-mount -o loop,offset=512 chr-$CHR_VERSION.img /mnt
+# Step 3: Membuat disk virtual
+loading_animation 3 "Membuat disk virtual sebesar $DISK_SIZE..."
+qemu-img create -f qcow2 $DISK_NAME $DISK_SIZE
 
-echo "/ip address add address=${INTERFACE_IP} interface=[/interface ethernet find where name=ether1]
-/ip route add gateway=${INTERFACE_GATEWAY}
-" > /mnt/rw/autorun.scr
+# Step 4: Instal CHR ke disk virtual
+loading_animation 5 "Menginstal CHR ke disk virtual..."
+qemu-system-x86_64 -drive file=$DISK_NAME,if=virtio -drive file=$IMAGE_NAME,if=virtio -nographic -serial telnet:127.0.0.1:5555,server,nowait -boot d -m 256 -netdev user,id=net0,hostfwd=tcp::2222-:22 -device e1000,netdev=net0 -enable-kvm
 
-umount /mnt
-echo u > /proc/sysrq-trigger
-dd if=chr-$CHR_VERSION.img of=/dev/${DISK} bs=1M-
+# Step 5: Konfigurasi DHCP client
+loading_animation 3 "Mengonfigurasi auto DHCP client di $PORT_ETH..."
+cat << EOF > dhcp-client.rsc
+/interface ethernet set $PORT_ETH name=ether1
+/ip dhcp-client add interface=ether1
+EOF
+echo "Konfigurasi DHCP client selesai."
+
+# Step 6: Membersihkan file sementara
+loading_animation 2 "Membersihkan file sementara..."
+rm -f $IMAGE_NAME.zip $IMAGE_NAME
+
+# Delay dan reboot
+echo "Instalasi selesai. Rebooting dalam 5 detik..."
+sleep 5
+reboot
