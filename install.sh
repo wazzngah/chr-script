@@ -46,7 +46,7 @@ fi
 
 # Variabel konfigurasi
 CHR_VERSION="7.11.2" # Ubah versi sesuai kebutuhan
-DISK_SIZE="1G"
+DISK_SIZE="8G" # Memaksimalkan ukuran disk menjadi 8GB
 CHR_IMAGE_URL="https://download.mikrotik.com/routeros/$CHR_VERSION/chr-$CHR_VERSION.img.zip"
 IMAGE_NAME="chr-$CHR_VERSION.img"
 DISK_NAME="chr-disk.img"
@@ -95,15 +95,22 @@ qemu-img create -f qcow2 $DISK_NAME $DISK_SIZE
 # Step 4: Instal CHR ke disk virtual
 echo "Menginstal CHR ke disk virtual..."
 progress_bar 40
-qemu-system-x86_64 -drive file=$DISK_NAME,if=virtio -drive file=$IMAGE_NAME,if=virtio -nographic -serial telnet:127.0.0.1:5555,server,nowait -boot d -m 256 -netdev user,id=net0,hostfwd=tcp::2222-:22 -device e1000,netdev=net0 -enable-kvm
+qemu-system-x86_64 \
+    -drive file=$DISK_NAME,if=virtio,format=qcow2 -drive file=$IMAGE_NAME,if=virtio \
+    -nographic -serial telnet:127.0.0.1:5555,server,nowait \
+    -boot once=d -m 256 \
+    -netdev user,id=net0,hostfwd=tcp::2222-:22 -device e1000,netdev=net0 \
+    -enable-kvm
 
-# Step 5: Konfigurasi DHCP client
-echo "Mengonfigurasi auto DHCP client di $PORT_ETH..."
-cat << EOF > dhcp-client.rsc
-/interface ethernet set $PORT_ETH name=ether1
-/ip dhcp-client add interface=ether1
-EOF
-echo "Konfigurasi DHCP client selesai."
+# Step 5: Booting dengan disk virtual
+echo "Menjalankan CHR menggunakan disk virtual..."
+progress_bar 30
+qemu-system-x86_64 \
+    -drive file=$DISK_NAME,if=virtio,format=qcow2 \
+    -nographic -serial telnet:127.0.0.1:5555,server,nowait \
+    -boot c -m 256 \
+    -netdev user,id=net0,hostfwd=tcp::2222-:22 -device e1000,netdev=net0 \
+    -enable-kvm
 
 # Step 6: Membersihkan file sementara
 echo "Membersihkan file sementara..."
