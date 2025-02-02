@@ -23,6 +23,4 @@ dos2unix install.sh
 ```
 bash install.sh
 ```
-# Full Tutorial
-https://youtu.be/1_2Cz3szT0Q
-  
+
